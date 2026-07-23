@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+# Publishes the FermTrend static site to GitHub Pages on every push
+# to main.  The site is pure static HTML/CSS/JS -- no build step, no
+# npm install required.  We just tar up the root (minus the worker/
+# subfolder and repo cruft) and hand it to actions/deploy-pages.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site
+        # Copy everything except the Worker source, workflow dir, and
+        # top-level docs/dev files into a clean staging dir.  Cheaper
+        # to whitelist than blacklist because the file set is small.
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp style.css _site/
+          cp app.js _site/
+          cp fg.js _site/
+          cp chart.js _site/
+          cp bf-client.js _site/
+          cp storage.js _site/
+          cp LICENSE _site/
+          cp README.md _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

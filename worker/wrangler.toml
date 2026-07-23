@@ -1,0 +1,23 @@
+# Cloudflare Worker config for the FermTrend CORS proxy.
+#
+# Deploy: `wrangler deploy` from this directory.
+# After first deploy, note the workers.dev URL Wrangler prints and paste
+# it into ../bf-client.js  (const WORKER_URL = "...").
+
+name             = "fermtrend-proxy"
+main             = "index.js"
+compatibility_date = "2026-07-23"
+
+# Free-tier plan.  100k requests/day, 10ms CPU/request.  A single BF
+# fetch (network-bound) is well under the CPU budget; the daily
+# request budget is the only real cap.
+workers_dev = true
+
+# No KV, no D1, no R2, no secrets.  This is by design -- the Worker
+# holds no state.  The Authorization header is forwarded verbatim
+# from the browser and never stored.
+
+# Optional: uncomment to send Worker logs to a Logpush destination.
+# [observability]
+# enabled = true
+# head_sampling_rate = 1
