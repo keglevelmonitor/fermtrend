@@ -3,10 +3,32 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FermTrend</title>
+  <title>FermTrend &mdash; Brewer's Friend SG trend analysis</title>
+  <meta name="description" content="Free browser app for Brewer's Friend fermentation-stability analysis. Paste your API key, pick a session, get the same SG trend + FG classification the FermVault Brain fermentation controller uses. Nothing stored server-side; API key stays in your browser."/>
+  <meta name="theme-color" content="#0a0a0a"/>
+
+  <!-- Open Graph / Facebook / LinkedIn / Slack / Discord -->
+  <meta property="og:type"        content="website"/>
+  <meta property="og:site_name"   content="FermTrend"/>
+  <meta property="og:title"       content="FermTrend &mdash; Brewer's Friend SG trend analysis"/>
+  <meta property="og:description" content="Free browser app for Brewer's Friend fermentation-stability analysis. Same SG trend + FG classification the FermVault Brain uses. API key stays in your browser."/>
+  <meta property="og:url"         content="https://keglevelmonitor.github.io/fermtrend/"/>
+  <meta property="og:image"       content="https://keglevelmonitor.github.io/fermtrend/og-image.png"/>
+  <meta property="og:image:width"  content="1200"/>
+  <meta property="og:image:height" content="675"/>
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card"        content="summary_large_image"/>
+  <meta name="twitter:title"       content="FermTrend &mdash; Brewer's Friend SG trend analysis"/>
+  <meta name="twitter:description" content="Free browser app for Brewer's Friend fermentation-stability analysis. Same SG trend + FG classification the FermVault Brain uses."/>
+  <meta name="twitter:image"       content="https://keglevelmonitor.github.io/fermtrend/og-image.png"/>
+
   <link rel="stylesheet" href="style.css"/>
-  <!-- Favicon: inline SVG so we don't ship a binary. -->
+
+  <!-- Favicon: inline SVG for modern browsers (no extra HTTP request). -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23141414'/%3E%3Cpath d='M4 22 L10 18 L14 20 L18 12 L22 16 L28 8' stroke='%234ade80' stroke-width='2.5' fill='none' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E"/>
+  <!-- iOS home-screen icon (uses the OG image; iOS auto-crops to a square). -->
+  <link rel="apple-touch-icon" href="og-image.png"/>
 </head>
 <body>
 <div id="app">
@@ -216,7 +238,7 @@
         byte-for-byte identical.
       </p>
       <p class="settings-desc">
-        Source: <a href="https://github.com/keglevelmonitor/FermTrend" target="_blank" rel="noopener">github.com/keglevelmonitor/FermTrend</a>.
+        Source: <a href="https://github.com/keglevelmonitor/fermtrend" target="_blank" rel="noopener">github.com/keglevelmonitor/fermtrend</a>.
         MIT-licensed.  Deploy your own copy in 15 minutes -- see the
         README.
       </p>
