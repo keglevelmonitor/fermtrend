@@ -456,18 +456,25 @@ function renderStaleBanner() {
 }
 
 function renderFgCard(cls) {
+  const bar    = $("#fg-status-bar");
   const status = $("#fg-status");
-  const value  = $("#fg-value");
   const hint   = $("#fg-hint");
   const ts     = $("#fg-ts");
 
-  status.textContent = cls.status;
-  value.textContent  = cls.value;
-  hint.textContent   = cls.hint || "-";
+  // For Stable, show the final gravity right next to the status label
+  // (e.g. "Stable  1.013").  For other statuses, VALUE is "-.---" and
+  // adds no info, so omit it.
+  const valuePart = (cls.status === "Stable" && cls.value && cls.value !== "-.---")
+    ? "  " + cls.value
+    : "";
+  status.textContent = cls.status + valuePart;
 
-  // Color the status label.
-  status.className = "fg-val " + statusClass(cls.status);
-  value.className  = "fg-val " + statusClass(cls.status);
+  const hintText = (cls.hint || "").trim();
+  hint.textContent = hintText;
+  bar.classList.toggle("no-hint", !hintText);
+
+  // Colour the status label per state.
+  status.className = "fg-status-value " + statusClass(cls.status);
 
   if (cls.last_ts) ts.textContent = `newest ${cls.last_ts.slice(0, 16).replace("T", " ")}`;
   else             ts.textContent = "";

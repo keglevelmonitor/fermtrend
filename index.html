@@ -87,39 +87,25 @@
         <span class="stale-text" id="stale-text"></span>
       </div>
 
-      <!-- FG STATUS + TREND cards, side by side on desktop -->
-      <div class="card-row">
-        <div class="card fg-card">
-          <div class="card-header">FERMENTATION STATUS</div>
-          <div class="fg-body">
-            <div class="fg-row">
-              <span class="fg-key">STATUS</span>
-              <span class="fg-val" id="fg-status">Pending</span>
-              <span class="fg-ts"  id="fg-ts"></span>
-            </div>
-            <div class="fg-row">
-              <span class="fg-key">VALUE</span>
-              <span class="fg-val" id="fg-value">-.---</span>
-              <span></span>
-            </div>
-            <div class="fg-row">
-              <span class="fg-key">HINT</span>
-              <span class="fg-val" id="fg-hint" style="font-size:12px;color:#999">-</span>
-              <span></span>
-            </div>
-          </div>
-        </div>
+      <!-- FG STATUS single-line bar (above chart) -->
+      <div class="fg-status-bar" id="fg-status-bar">
+        <span class="fg-status-label">FERMENTATION STATUS</span>
+        <span class="fg-status-value" id="fg-status">Pending</span>
+        <span class="fg-status-sep">&middot;</span>
+        <span class="fg-status-hint"  id="fg-hint">-</span>
+        <span class="fg-status-ts"    id="fg-ts"></span>
+      </div>
 
-        <div class="card trend-card" id="trend-card">
-          <div class="trend-header">
-            <div class="card-header">SG TREND</div>
-            <div class="trend-sub" id="trend-sub"></div>
-          </div>
-          <div class="trend-svg-wrap">
-            <svg id="trend-svg" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
-          </div>
-          <div id="trend-empty" class="trend-empty hidden">Waiting for fermentation data...</div>
+      <!-- SG TREND chart, full width -->
+      <div class="card trend-card" id="trend-card">
+        <div class="trend-header">
+          <div class="card-header">SG TREND</div>
+          <div class="trend-sub" id="trend-sub"></div>
         </div>
+        <div class="trend-svg-wrap">
+          <svg id="trend-svg" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
+        </div>
+        <div id="trend-empty" class="trend-empty hidden">Waiting for fermentation data...</div>
       </div>
 
       <!-- FG DIAGNOSTICS panel -->

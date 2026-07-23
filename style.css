@@ -118,16 +118,6 @@ a:hover { color: #82d4ff; }
 
 /* ---- Cards + rows ---- */
 
-.card-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-@media (max-width: 720px) {
-  .card-row { grid-template-columns: 1fr; }
-}
-
 .card {
   background: #161616;
   border: 1px solid #262626;
@@ -210,55 +200,74 @@ a:hover { color: #82d4ff; }
 }
 .stale-text { flex: 1 1 auto; }
 
-/* ---- FG card ---- */
+/* ---- FG status bar (single line above chart) ---- */
 
-.fg-card { display: flex; flex-direction: column; }
-
-.fg-body {
+.fg-status-bar {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-  color: #ccc;
-  margin-top: 4px;
-  line-height: 1.5;
-}
-.fg-row {
-  display: grid;
-  grid-template-columns: 70px 1fr auto;
   align-items: baseline;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #161616;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.4;
 }
-.fg-key {
+.fg-status-label {
+  flex: 0 0 auto;
   color: #888;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
-.fg-val {
+.fg-status-value {
+  flex: 0 0 auto;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 15px;
   color: #eee;
+}
+.fg-status-sep {
+  flex: 0 0 auto;
+  color: #444;
+}
+.fg-status-hint {
+  flex: 1 1 auto;
+  color: #bbb;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 15px;
+  font-size: 13px;
 }
-.fg-val.fg-stable     { color: #4caf50; font-weight: 600; }
-.fg-val.fg-fermenting,
-.fg-val.fg-settling   { color: #ffa500; }
-.fg-val.fg-jittery    { color: #f87171; }
-.fg-val.fg-not-enough { color: #d0d0d0; }
-.fg-ts {
+.fg-status-ts {
+  flex: 0 0 auto;
   color: #888;
   font-size: 12px;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  text-align: right;
 }
+
+/* Status color chips -- applied to .fg-status-value + inherited to
+   .fg-status-hint sibling via JS.  Same palette as before. */
+.fg-status-value.fg-stable     { color: #4caf50; }
+.fg-status-value.fg-fermenting,
+.fg-status-value.fg-settling   { color: #ffa500; }
+.fg-status-value.fg-jittery    { color: #f87171; }
+.fg-status-value.fg-not-enough { color: #d0d0d0; }
+
+/* When there's no useful hint (e.g. Pending), squash the separator
+   so it doesn't look like a broken dangling dot. */
+.fg-status-bar.no-hint .fg-status-sep,
+.fg-status-bar.no-hint .fg-status-hint { display: none; }
 
 /* ---- Trend card ---- */
 
 .trend-card {
   display: flex;
   flex-direction: column;
-  min-height: 240px;
+  min-height: 320px;
+  margin-bottom: 12px;
 }
 .trend-header {
   display: flex;
