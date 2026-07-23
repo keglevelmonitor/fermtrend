@@ -341,28 +341,25 @@ async function refreshFromBf() {
 }
 
 function pickAnchorIso(current) {
-  // "Recently updated" = within the last 4 days -> use today.  Any
-  // older -> use the session's updated_at (so we grab the tail of a
-  // finished ferment).  Falls back to today when we have neither.
+  // Anchor the fetch window on the timestamp of the newest reading BF
+  // has -- `device_updated_at`, which fetchCurrent returns as `ts`.
+  // This is right for both:
+  //   * Active ferments -- ts is very recent, window catches all
+  //     recent readings.
+  //   * Archived ferments -- ts is the end-of-ferment timestamp,
+  //     window catches the tail of the finished session so the
+  //     analyzer has data to work with instead of getting an empty
+  //     "today - N days" window that produces "Not Enough Readings".
+  // Falls back to session.updated_at (edit timestamp) and then today
+  // when we have neither -- both are very rare paths.
   const today = todayIsoDate() + "T12:00:00Z";
   if (!current) return today;
-  const u = current.updated_at || current.og_ts || "";
-  if (!u || u.length < 10) return today;
-  // Use FG.parseIsoToSec so both "2026-07-20T15:32:00Z" and
-  // "2026-07-20 15:32:00" (BF's alternate format) are handled.
-  const udSec = FG.parseIsoToSec(u);
-  if (udSec === null) return today;
-  const nowSec  = Date.now() / 1000;
-  const ageDays = (nowSec - udSec) / 86400;
-  // BF's session.updated_at ticks when the session record is edited,
-  // not on new fermentation readings.  So a "recently updated"
-  // session is a proxy for "user has touched it lately", not
-  // necessarily "readings are recent".  We default to today anyway
-  // and only fall back to updated_at if the session hasn't been
-  // touched in over a month -- that's almost always a truly archived
-  // ferment where anchoring on today would return an empty window.
-  if (ageDays < 30) return today;
-  return u;
+  const ts = current.ts || current.updated_at || current.og_ts || "";
+  if (!ts || ts.length < 10) return today;
+  // Sanity-check that we can parse it -- if BF returned something
+  // malformed, fall back to today rather than passing garbage to
+  // isoDateMinusDays.
+  return FG.parseIsoToSec(ts) !== null ? ts : today;
 }
 
 /* ---- Dashboard render ---- */
@@ -426,6 +423,15 @@ function renderStrip() {
   }
 }
 
+// Cutoff (hours) above which we assume the session is archived and
+// suppress the DATA STALE banner entirely.  Rationale: the banner is
+// a diagnostic for actively-monitored ferments ("your sensor died").
+// If the newest reading is more than a day old, the session is
+// clearly not being actively polled anymore, so "stale" doesn't
+// apply -- the user is running retrospective analysis and the
+// CURRENT SG age string ("31.0 d ago") already conveys the fact.
+const ARCHIVED_CUTOFF_H = 24;
+
 function renderStaleBanner() {
   const banner = $("#stale-banner");
   const text   = $("#stale-text");
@@ -437,7 +443,10 @@ function renderStaleBanner() {
   }
   const ageH = (Date.now() / 1000 - lastTs) / 3600;
   const staleH = Number(app.fgSettings.stale_hours) || DEFAULT_FG_SETTINGS.stale_hours;
-  if (ageH < staleH) {
+  // Only fire the banner in the "active but stale" band: newer than
+  // ARCHIVED_CUTOFF_H (still being polled) but older than stale_hours
+  // (poll gap suggests something broke).
+  if (ageH < staleH || ageH >= ARCHIVED_CUTOFF_H) {
     banner.classList.add("hidden");
     return;
   }
