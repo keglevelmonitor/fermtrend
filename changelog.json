@@ -1,6 +1,14 @@
 {
-    "current":  "0.1.4",
+    "current":  "0.1.5",
     "entries":  [
+                    {
+                        "version":  "0.1.5",
+                        "date":  "2026-07-24",
+                        "notes":  [
+                                      "Minor UI enhancements",
+                                      "Project documentation"
+                                  ]
+                    },
                     {
                         "version":  "0.1.4",
                         "date":  "2026-07-24",
