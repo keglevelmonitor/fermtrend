@@ -1,0 +1,20 @@
+{
+  "current": "0.1.0",
+  "entries": [
+    {
+      "version": "0.1.0",
+      "date": "2026-07-23",
+      "notes": [
+        "Initial public release.",
+        "SG trend chart plus FG stability analysis lifted from the FermVault Brain dashboard; analyzer output is byte-for-byte identical.",
+        "Sessions tab lists your recent Brewer's Friend sessions; click one to load.",
+        "Settings tab: API key entry (stored in localStorage) plus FG analyzer knobs (tolerance, window days, max outliers, min readings, stale hours).",
+        "Retrospective analysis works: fetch window anchors on the last-reading timestamp so archived ferments load their tail instead of an empty 'today - N days' window.",
+        "DATA STALE banner suppressed for archived sessions (newest reading over 24 h old); still fires for actively-monitored ferments where staleness indicates a sensor problem.",
+        "One-line FG status bar above a full-width trend chart; FG diagnostics panel below.",
+        "Cloudflare Worker CORS proxy; API key never leaves the browser except through the proxy and the proxy does not log or persist it.",
+        "Open Graph card image and social meta tags for clean link previews."
+      ]
+    }
+  ]
+}

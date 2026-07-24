@@ -36,7 +36,8 @@
   <header class="main-header">
     <h1>FermTrend</h1>
     <span id="conn-pill" class="status-pill offline">NO KEY</span>
-    <span id="session-label" class="version"></span>
+    <span id="session-label" class="header-label"></span>
+    <span id="version-label" class="version"></span>
   </header>
 
   <nav class="top-nav">
@@ -233,6 +234,18 @@
         Cloudflare Worker CORS proxy, which forwards it verbatim to
         Brewer's Friend and does not log or persist it.
       </p>
+    </div>
+
+    <div class="settings-block">
+      <div class="settings-header">Revision history</div>
+      <p class="settings-desc">
+        FermTrend has no OTA -- shipping a change means pushing to the
+        <code>main</code> branch and letting Pages redeploy.  This is
+        the ledger of what shipped when.
+      </p>
+      <div id="rev-history" class="rev-history">
+        <div class="rev-empty">Loading...</div>
+      </div>
     </div>
   </section>
 

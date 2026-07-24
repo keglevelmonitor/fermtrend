@@ -42,6 +42,7 @@ jobs:
           cp bf-client.js _site/
           cp storage.js _site/
           cp og-image.png _site/
+          cp changelog.json _site/
           cp LICENSE _site/
           cp README.md _site/
 

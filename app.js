@@ -64,6 +64,13 @@ async function init() {
 
   updateConnPill();
 
+  // Fetch the changelog (best-effort).  Populates the header version
+  // label AND the About-tab revision history card.  A missing or
+  // malformed changelog.json shouldn't break the rest of the app --
+  // it's diagnostic content, not core functionality.
+  loadChangelog().catch(err =>
+    console.warn("[changelog] load failed:", err && err.message));
+
   // Try to reload the last-viewed session from cache so the dashboard
   // is populated on refresh without a network round-trip.
   try {
@@ -493,6 +500,84 @@ function statusClass(status) {
 
 function fmtSg(v) {
   return (typeof v === "number") ? v.toFixed(3) : "-.---";
+}
+
+/* ---------------------------------------------------------------------------
+ * Changelog / version display
+ *
+ * changelog.json is a small file in the repo root, updated by ship.ps1
+ * on every push.  Shape:
+ *   { "current": "0.1.1",
+ *     "entries": [ { "version": "0.1.1", "date": "2026-07-24",
+ *                    "notes": ["...", "..."] }, ... ] }
+ *
+ * Fetched once on page load.  Cache-busted with a Date.now() query
+ * param so a freshly-shipped version shows up on the very next page
+ * reload without waiting for GH Pages / browser HTTP caches to clear.
+ * ------------------------------------------------------------------------- */
+
+async function loadChangelog() {
+  const resp = await fetch(`changelog.json?t=${Date.now()}`, { cache: "no-cache" });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const log = await resp.json();
+
+  // Header version label.
+  const label = $("#version-label");
+  if (label && log.current) label.textContent = `v${log.current}`;
+
+  // About-tab revision history card.
+  const host = $("#rev-history");
+  if (!host) return;
+  host.innerHTML = "";
+
+  const entries = Array.isArray(log.entries) ? log.entries : [];
+  if (!entries.length) {
+    host.innerHTML = `<div class="rev-empty">No history yet.</div>`;
+    return;
+  }
+
+  entries.forEach((e, idx) => {
+    const wrap = document.createElement("div");
+    wrap.className = "rev-entry";
+
+    const head = document.createElement("div");
+    head.className = "rev-entry-head";
+
+    const v = document.createElement("span");
+    v.className   = "rev-version";
+    v.textContent = `v${e.version || "?"}`;
+    head.appendChild(v);
+
+    if (e.date) {
+      const d = document.createElement("span");
+      d.className   = "rev-date";
+      d.textContent = e.date;
+      head.appendChild(d);
+    }
+
+    if (idx === 0) {
+      const tag = document.createElement("span");
+      tag.className   = "rev-latest-tag";
+      tag.textContent = "latest";
+      head.appendChild(tag);
+    }
+
+    wrap.appendChild(head);
+
+    const notes = Array.isArray(e.notes) ? e.notes : [];
+    if (notes.length) {
+      const ul = document.createElement("ul");
+      ul.className = "rev-notes";
+      for (const n of notes) {
+        const li = document.createElement("li");
+        li.textContent = n;
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+
+    host.appendChild(wrap);
+  });
 }
 
 /* ---------------------------------------------------------------------------

@@ -55,7 +55,7 @@ a:hover { color: #82d4ff; }
 .status-pill.offline { background: #351414; color: #f87171; }
 .status-pill.warn    { background: #35301a; color: #ffd84d; }
 
-.version, #session-label {
+.header-label {
   margin-left: auto;
   font-size: 11px;
   color: #999;
@@ -66,6 +66,14 @@ a:hover { color: #82d4ff; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.version {
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 0.4px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  margin-left: 8px;
+}
+.header-label:empty + .version { margin-left: auto; }
 
 /* ---- Nav ---- */
 
@@ -512,3 +520,63 @@ a:hover { color: #82d4ff; }
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Revision history ---- */
+
+.rev-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rev-empty {
+  color: #666;
+  font-style: italic;
+  font-size: 13px;
+}
+.rev-entry {
+  background: #0f0f0f;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.rev-entry:first-child {
+  border-color: #3a2810;
+}
+.rev-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.rev-version {
+  color: #ffa500;
+  font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+}
+.rev-date {
+  color: #888;
+  font-size: 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.rev-latest-tag {
+  margin-left: auto;
+  background: #3a2810;
+  color: #ffd18a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.rev-notes {
+  margin: 0;
+  padding-left: 20px;
+  color: #ccc;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.rev-notes li { margin-bottom: 3px; }
+.rev-notes li:last-child { margin-bottom: 0; }
