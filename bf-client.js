@@ -224,7 +224,7 @@ export async function fetchReadingsWindow(sessionId, {
   fromDate = null,
   toDate   = null,
   pageSize = 100,   // browsers don't have the Pico's 50-row heap constraint
-  maxPages = 40,
+  maxPages = 50,    // 28d @ 15-min ~ 2688 rows; 50*100 = 5000 headroom
   onProgress = null,
   signal   = null,
 } = {}) {

@@ -41,6 +41,7 @@ jobs:
           cp chart.js _site/
           cp bf-client.js _site/
           cp storage.js _site/
+          cp sg-compensate.js _site/
           cp og-image.png _site/
           cp changelog.json _site/
           cp LICENSE _site/

@@ -101,6 +101,18 @@
       <div class="card trend-card" id="trend-card">
         <div class="trend-header">
           <div class="card-header">SG TREND</div>
+          <div class="trend-controls">
+            <div class="trend-mode" id="trend-mode" role="group" aria-label="Chart span">
+              <button type="button" class="trend-mode-btn active" data-mode="window">Window</button>
+              <button type="button" class="trend-mode-btn" data-mode="full">Full</button>
+            </div>
+            <button type="button" class="trend-temp-toggle" id="btn-temp-toggle" aria-pressed="false">Temp</button>
+            <div class="trend-mode trend-unit disabled" id="trend-unit" role="group" aria-label="Temperature unit">
+              <button type="button" class="trend-mode-btn active" data-unit="F">&deg;F</button>
+              <button type="button" class="trend-mode-btn" data-unit="C">&deg;C</button>
+            </div>
+            <button type="button" class="trend-comp-toggle disabled" id="btn-comp-toggle" aria-pressed="false" title="Correct SG to 68°F using each reading's temperature. Points without temp stay raw.">SG Temp Compensate</button>
+          </div>
           <div class="trend-sub" id="trend-sub"></div>
         </div>
         <div class="trend-svg-wrap">
@@ -131,9 +143,11 @@
     <div class="settings-block">
       <div class="settings-header">Your Brewer's Friend sessions</div>
       <p class="settings-desc">
-        Pick a session to load its readings.  We fetch the last <span id="fetch-window-label">3</span>
-        days by default (change on the SETTINGS tab).  Historical
-        sessions load their final <span id="fetch-window-label2">3</span>-day tail.
+        Pick a session to load its readings.  We always fetch up to the
+        last <strong>28 days</strong> of gravity data (enough for a
+        typical full ferment).  The FG analyzer still only looks at the
+        analysis window set on the SETTINGS tab (1&ndash;6 days) -- the
+        chart can show either that window or the full fetched span.
       </p>
 
       <div class="action-row">
@@ -173,9 +187,12 @@
     <div class="settings-block">
       <div class="settings-header">FG stability analyzer</div>
       <p class="settings-desc">
-        Same knobs the FermVault Brain uses.  Changes re-render the
-        analysis instantly against the currently loaded readings --
-        no re-fetch from BF required.
+        Same knobs the FermVault Brain uses.  <strong>Window (days)</strong>
+        is analysis-only -- it decides how much of the fetched history
+        the classifier looks at.  Refresh always pulls up to 28 days;
+        use the Full / Window control on the SG TREND card to choose
+        what the chart shows.  Changes re-render instantly against the
+        currently loaded readings -- no re-fetch from BF required.
       </p>
 
       <div class="form-row">
@@ -186,7 +203,7 @@
       <div class="form-row">
         <label for="in-window-days">Window (days)</label>
         <input type="number" id="in-window-days" step="1" min="1" max="6"/>
-        <span class="form-hint">How many days back to look. 1&ndash;6.</span>
+        <span class="form-hint">Analysis window only (1&ndash;6). Chart Full mode still shows up to 28 days.</span>
       </div>
       <div class="form-row">
         <label for="in-max-outliers">Max outliers</label>

@@ -35,9 +35,10 @@ export const FG = {
 
   // Filter+transform readings into (t_seconds, sg, ts_iso_string)
   // triples in chronological order.  If cutoffSec is given, only
-  // readings with t >= cutoffSec are kept -- lets analyze() ignore
-  // the pre-window tail.
-  pointsFromHistory(readings, cutoffSec) {
+  // readings with t >= cutoffSec are kept.  If endSec is given, only
+  // readings with t <= endSec are kept.  Together they select a
+  // closed analysis window [cutoffSec, endSec].
+  pointsFromHistory(readings, cutoffSec, endSec) {
     const pts = [];
     for (const r of readings) {
       if (!r || typeof r !== "object") continue;
@@ -47,6 +48,7 @@ export const FG = {
       const t = FG.parseIsoToSec(tsStr);
       if (t === null) continue;
       if (cutoffSec !== null && cutoffSec !== undefined && t < cutoffSec) continue;
+      if (endSec !== null && endSec !== undefined && t > endSec) continue;
       pts.push([t, sg, tsStr]);
     }
     pts.sort((a, b) => a[0] - b[0]);
@@ -127,11 +129,18 @@ export const FG = {
   // bf-client.js; `cfg` is the FG settings object with { tolerance,
   // window_days, max_outliers, min_readings }.
   //
+  // Optional `opts.anchorSec` (Unix seconds): right edge of the
+  // analysis window.  When omitted, anchors on the newest reading
+  // (default / "live" behaviour).  The window width is always
+  // cfg.window_days -- callers that want a draggable window move
+  // the anchor; they do not change the width here.
+  //
   // Returns:
   //   { stable: bool, error?: string, first_ts?, last_ts?,
   //     average_sg?, diagnostics?: {...}, settings: {...} }
-  analyze(readings, cfg) {
-    cfg = cfg || {};
+  analyze(readings, cfg, opts) {
+    cfg  = cfg  || {};
+    opts = opts || {};
     const tol         = Number(cfg.tolerance)      || 0.0005;
     // Window is a whole-day integer (max 6).  Convert to hours for
     // the existing slope math -- the analyzer speaks hours
@@ -154,16 +163,22 @@ export const FG = {
 
     if (!total) return { stable: false, error: "no data", settings };
 
-    // Ring buffer is stored chronologically, so the last entry is
-    // newest.  Anchor the analysis window on that timestamp --
-    // historical sessions classify meaningfully even weeks after
-    // fermentation ended.
+    // Default anchor: newest reading.  Optional override for a
+    // user-positioned window (Full-chart drag).
     const lastR   = readings[total - 1];
     const lastTs  = (lastR && typeof lastR === "object") ? (lastR.t || "") : "";
-    const analysisRef = FG.parseIsoToSec(lastTs);
-    const cutoff  = analysisRef !== null ? analysisRef - winS : null;
+    const newestSec = FG.parseIsoToSec(lastTs);
+    let analysisRef = (typeof opts.anchorSec === "number" && isFinite(opts.anchorSec))
+      ? opts.anchorSec
+      : newestSec;
+    if (analysisRef === null) {
+      return { stable: false, error: "no data in window", settings };
+    }
+    // Never analyze past the newest sample we actually have.
+    if (newestSec !== null && analysisRef > newestSec) analysisRef = newestSec;
 
-    const winPts = FG.pointsFromHistory(readings, cutoff);
+    const cutoff = analysisRef - winS;
+    const winPts = FG.pointsFromHistory(readings, cutoff, analysisRef);
     settings.window_readings = winPts.length;
 
     if (!winPts.length) {
@@ -172,7 +187,7 @@ export const FG = {
 
     const wallNow   = Date.now() / 1000;
     const newestT   = winPts[winPts.length - 1][0];
-    const ref       = analysisRef !== null ? analysisRef : newestT;
+    const ref       = analysisRef;
     const newestAge = Math.max(0.0, (wallNow - newestT) / 3600.0);
     settings.newest_age_h = newestAge;
 

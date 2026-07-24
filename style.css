@@ -57,9 +57,10 @@ a:hover { color: #82d4ff; }
 
 .header-label {
   margin-left: auto;
-  font-size: 11px;
-  color: #999;
-  letter-spacing: 0.4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffa500;
+  letter-spacing: 0.6px;
   text-align: right;
   max-width: 40%;
   overflow: hidden;
@@ -282,12 +283,90 @@ a:hover { color: #82d4ff; }
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
+  flex-wrap: wrap;
+}
+.trend-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.trend-mode {
+  display: inline-flex;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.trend-mode.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.trend-mode-btn {
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.trend-mode-btn + .trend-mode-btn {
+  border-left: 1px solid #333;
+}
+.trend-mode-btn:hover { color: #e0e0e0; }
+.trend-mode-btn.active {
+  background: #2a1e0a;
+  color: #ffa500;
+}
+.trend-temp-toggle {
+  padding: 4px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.trend-temp-toggle:hover { color: #e0e0e0; border-color: #555; }
+.trend-temp-toggle.active {
+  background: #0a1e2a;
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+.trend-comp-toggle {
+  padding: 4px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.trend-comp-toggle:hover { color: #e0e0e0; border-color: #555; }
+.trend-comp-toggle.active {
+  background: #14351f;
+  border-color: #4ade80;
+  color: #4ade80;
+}
+.trend-comp-toggle.disabled {
+  opacity: 0.35;
+  pointer-events: none;
 }
 .trend-sub {
   font-size: 11px;
   color: #888;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.3px;
+  margin-left: auto;
 }
 .trend-svg-wrap {
   margin-top: 8px;
@@ -315,23 +394,37 @@ a:hover { color: #82d4ff; }
 .trend-axis        { stroke: #2a2a2a; stroke-width: 1; }
 .trend-tick        { stroke: #333;    stroke-width: 1; }
 .trend-tick-label  { fill:   #8a8a8a; font-size: 11px; }
+.trend-tick-sg     { fill:   #4ade80; }
+.trend-tick-temp   { fill:   #60a5fa; }
 .trend-line {
   fill: none;
   stroke: #4ade80;
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
+  pointer-events: none;
+}
+.trend-temp-line {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+  pointer-events: none;
 }
 .trend-slope {
   stroke: #ffa500;
   stroke-width: 1.75;
   stroke-dasharray: 6 4;
   opacity: 0.85;
+  pointer-events: none;
 }
 .trend-outlier {
   fill: #f87171;
   stroke: #0f0f0f;
   stroke-width: 1;
+  pointer-events: none;
 }
 .trend-band-stable {
   fill: #4ade80;
@@ -353,6 +446,26 @@ a:hover { color: #82d4ff; }
   fill: #8a8a8a;
   font-size: 11px;
   font-style: italic;
+}
+.trend-window-region {
+  fill: #ffa500;
+  fill-opacity: 0.08;
+  stroke: #ffa500;
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: all;
+}
+.trend-window-handle {
+  fill: #ffa500;
+  fill-opacity: 0.55;
+  stroke: #ffa500;
+  stroke-opacity: 0.9;
+  stroke-width: 1;
+  pointer-events: all;
+}
+.trend-window-label {
+  pointer-events: none;
 }
 
 /* ---- FG diagnostics panel ---- */

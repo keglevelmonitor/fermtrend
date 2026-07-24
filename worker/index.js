@@ -24,28 +24,31 @@
 
 const BF_ORIGIN     = "https://api.brewersfriend.com";
 
-// CHANGE ME after your first `wrangler deploy` to lock this Worker to
-// your own GitHub Pages origin.  "*" is fine for local development.
-const ALLOWED_ORIGIN = "https://keglevelmonitor.github.io";
+// Production Pages origin.  Local preview (npx serve) uses localhost /
+// 127.0.0.1 / LAN http origins -- those are allowed by isAllowedOrigin()
+// below so "Test" works before you ship to GitHub Pages.
+const PRODUCTION_ORIGIN = "https://keglevelmonitor.github.io";
 
 // Preflight cache: browsers won't re-preflight for this many seconds.
 const PREFLIGHT_MAX_AGE = 86400; // 24 h
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (origin === PRODUCTION_ORIGIN) return true;
+  // Local static servers: http://localhost:3000, http://127.0.0.1:5173, etc.
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  // LAN preview from serve's "Network" URL (phone / another PC on WiFi).
+  if (/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/.test(origin)) return true;
+  if (/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/.test(origin)) return true;
+  return false;
+}
+
 function corsHeaders(req) {
   const reqOrigin = req.headers.get("Origin") || "";
-  // If ALLOWED_ORIGIN is a wildcard, echo it back; otherwise reflect
-  // only when it matches so a locked deploy actually enforces the lock.
-  let allow;
-  if (ALLOWED_ORIGIN === "*") {
-    allow = "*";
-  } else if (reqOrigin === ALLOWED_ORIGIN) {
-    allow = ALLOWED_ORIGIN;
-  } else {
-    // Origin mismatch -- return the allowed origin anyway so the
-    // browser surfaces a clean "origin blocked" error instead of a
-    // confusing "response missing CORS headers".
-    allow = ALLOWED_ORIGIN;
-  }
+  // Reflect the request origin only when it is on the allowlist.
+  // On mismatch, still emit PRODUCTION_ORIGIN so the browser shows a
+  // clear CORS error instead of "missing Access-Control-Allow-Origin".
+  const allow = isAllowedOrigin(reqOrigin) ? reqOrigin : PRODUCTION_ORIGIN;
   return {
     "Access-Control-Allow-Origin":  allow,
     // Both Authorization (Basic api:KEY) and X-API-Key are accepted by

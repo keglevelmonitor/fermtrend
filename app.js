@@ -28,6 +28,9 @@ import {
   getFgSettings, putFgSettings, DEFAULT_FG_SETTINGS,
   getLastSessionId, putLastSessionId,
 } from "./storage.js";
+import {
+  compensateReadings, countReadingsWithTemp, SG_CAL_TEMP_F,
+} from "./sg-compensate.js";
 
 /* ---------------------------------------------------------------------------
  * App state (in-memory).
@@ -35,12 +38,35 @@ import {
 
 const app = {
   fgSettings:   { ...DEFAULT_FG_SETTINGS },
-  sessions:     [],                    // last-loaded list from /brewsessions
+  sessions:     [],
   currentSessionId: "",
-  currentSession:   null,              // { id, title, og, updated_at, ... }
-  readings:     [],                    // Array<{t, sg, tf}>
-  currentBf:    null,                  // last fetchCurrent() result
+  currentSession:   null,
+  readings:     [],
+  currentBf:    null,
+  // Chart display mode: "window" (analysis window only) or "full"
+  // (entire fetched span, up to FETCH_SPAN_DAYS).  Persisted in
+  // localStorage so it survives reloads.
+  chartMode:    "window",
+  // Temperature overlay on the SG trend chart.  Data is stored as F
+  // (tf); tempUnit is display-only.  Defaults: Temp off, °F.
+  tempVisible:  false,
+  tempUnit:     "F",
+  // SG temperature compensation (correct to 68 F).  Default off.
+  // Applied in memory to chart + FG.analyze; raw readings stay in IDB.
+  compensate:   false,
+  // Right edge of the analysis window (Unix seconds).  null = anchor
+  // on the newest reading (default).  Set by dragging the shaded
+  // region on the Full chart; width always comes from WINDOW (DAYS).
+  analysisEndSec: null,
 };
+
+// Always fetch this many days of readings on Refresh.  Independent of
+// WINDOW (DAYS), which is analysis-only.
+const FETCH_SPAN_DAYS = 28;
+const LS_CHART_MODE   = "fermtrend.chart_mode";
+const LS_TEMP_VISIBLE = "fermtrend.temp_visible";
+const LS_TEMP_UNIT    = "fermtrend.temp_unit";
+const LS_COMPENSATE   = "fermtrend.sg_compensate";
 
 const $  = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
@@ -60,9 +86,20 @@ async function init() {
   // Load persisted FG settings + last session id.
   try { app.fgSettings = await getFgSettings(); } catch (_) {}
   populateFgSettingsForm();
-  updateWindowLabels();
-
   updateConnPill();
+
+  // Restore chart display prefs.
+  try {
+    const saved = localStorage.getItem(LS_CHART_MODE);
+    if (saved === "full" || saved === "window") app.chartMode = saved;
+    if (localStorage.getItem(LS_TEMP_VISIBLE) === "1") app.tempVisible = true;
+    const u = localStorage.getItem(LS_TEMP_UNIT);
+    if (u === "F" || u === "C") app.tempUnit = u;
+    if (localStorage.getItem(LS_COMPENSATE) === "1") app.compensate = true;
+  } catch (_) {}
+  syncChartModeButtons();
+  syncTempControls();
+  syncCompensateControl();
 
   // Fetch the changelog (best-effort).  Populates the header version
   // label AND the About-tab revision history card.  A missing or
@@ -166,7 +203,6 @@ function wireSettings() {
     try {
       await putFgSettings(app.fgSettings);
       setMsg("#fg-save-msg", "Saved.", "ok");
-      updateWindowLabels();
       // Re-render the dashboard against loaded readings so tweaks show
       // up immediately.
       if (app.readings.length) renderDashboard();
@@ -181,7 +217,6 @@ function wireSettings() {
     try {
       await putFgSettings(app.fgSettings);
       setMsg("#fg-save-msg", "Reset.", "ok");
-      updateWindowLabels();
       if (app.readings.length) renderDashboard();
     } catch (err) {
       setMsg("#fg-save-msg", err.message || String(err), "err");
@@ -207,14 +242,6 @@ function readFgSettingsForm() {
   };
   // Clamp window_days to the analyzer's supported range.
   app.fgSettings.window_days = Math.max(1, Math.min(6, app.fgSettings.window_days));
-}
-
-function updateWindowLabels() {
-  const w = String(app.fgSettings.window_days);
-  const l1 = $("#fetch-window-label");
-  const l2 = $("#fetch-window-label2");
-  if (l1) l1.textContent = w;
-  if (l2) l2.textContent = w;
 }
 
 /* ---------------------------------------------------------------------------
@@ -269,6 +296,7 @@ function renderSessionsList() {
 async function selectSession(s) {
   app.currentSessionId = s.id;
   app.currentSession   = s;
+  app.analysisEndSec   = null;
   await putLastSessionId(s.id);
   await putSession(s.id, s);
   $("#session-label").textContent = s.title || s.id;
@@ -287,6 +315,54 @@ async function selectSession(s) {
 function wireDashboard() {
   $("#btn-refresh").addEventListener("click", refreshFromBf);
 
+  // Full / Window chart mode toggle -- re-renders from cached readings,
+  // no BF round-trip.
+  for (const btn of $$(".trend-mode-btn[data-mode]")) {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-mode");
+      if (mode !== "full" && mode !== "window") return;
+      if (mode === app.chartMode) return;
+      app.chartMode = mode;
+      try { localStorage.setItem(LS_CHART_MODE, mode); } catch (_) {}
+      syncChartModeButtons();
+      if (app.readings.length) renderDashboard();
+    });
+  }
+
+  const tempBtn = $("#btn-temp-toggle");
+  if (tempBtn) {
+    tempBtn.addEventListener("click", () => {
+      app.tempVisible = !app.tempVisible;
+      try { localStorage.setItem(LS_TEMP_VISIBLE, app.tempVisible ? "1" : "0"); } catch (_) {}
+      syncTempControls();
+      if (app.readings.length) renderDashboard();
+    });
+  }
+
+  for (const btn of $$("#trend-unit .trend-mode-btn")) {
+    btn.addEventListener("click", () => {
+      if (!app.tempVisible) return;
+      const u = btn.getAttribute("data-unit");
+      if (u !== "F" && u !== "C") return;
+      if (u === app.tempUnit) return;
+      app.tempUnit = u;
+      try { localStorage.setItem(LS_TEMP_UNIT, u); } catch (_) {}
+      syncTempControls();
+      if (app.readings.length) renderDashboard();
+    });
+  }
+
+  const compBtn = $("#btn-comp-toggle");
+  if (compBtn) {
+    compBtn.addEventListener("click", () => {
+      if (compBtn.classList.contains("disabled")) return;
+      app.compensate = !app.compensate;
+      try { localStorage.setItem(LS_COMPENSATE, app.compensate ? "1" : "0"); } catch (_) {}
+      syncCompensateControl();
+      if (app.readings.length) renderDashboard();
+    });
+  }
+
   // Re-render the chart when the browser window changes size so the
   // pixel-accurate viewBox stays matched to the SVG's real client
   // size.  Debounced so a continuous drag doesn't thrash re-renders.
@@ -297,6 +373,54 @@ function wireDashboard() {
       if (app.readings && app.readings.length) renderDashboard();
     }, 150);
   });
+}
+
+function syncChartModeButtons() {
+  for (const btn of $$(".trend-mode-btn[data-mode]")) {
+    btn.classList.toggle("active", btn.getAttribute("data-mode") === app.chartMode);
+  }
+}
+
+function syncTempControls() {
+  const tempBtn = $("#btn-temp-toggle");
+  if (tempBtn) {
+    tempBtn.classList.toggle("active", !!app.tempVisible);
+    tempBtn.setAttribute("aria-pressed", app.tempVisible ? "true" : "false");
+  }
+  const unitGroup = $("#trend-unit");
+  if (unitGroup) {
+    unitGroup.classList.toggle("disabled", !app.tempVisible);
+  }
+  for (const btn of $$("#trend-unit .trend-mode-btn")) {
+    btn.classList.toggle("active", btn.getAttribute("data-unit") === app.tempUnit);
+  }
+}
+
+function syncCompensateControl() {
+  const btn = $("#btn-comp-toggle");
+  if (!btn) return;
+  const nTemp = countReadingsWithTemp(app.readings);
+  const canComp = nTemp >= 1;
+  btn.classList.toggle("disabled", !canComp);
+  // If we can't compensate, force the flag off in the UI so we don't
+  // leave a sticky "active" look with no effect.
+  if (!canComp && app.compensate) {
+    app.compensate = false;
+    try { localStorage.setItem(LS_COMPENSATE, "0"); } catch (_) {}
+  }
+  btn.classList.toggle("active", !!app.compensate && canComp);
+  btn.setAttribute("aria-pressed", app.compensate && canComp ? "true" : "false");
+  btn.title = canComp
+    ? `Correct SG to ${SG_CAL_TEMP_F}\u00b0F using each reading's temperature. Points without temp stay raw.`
+    : "Compensate needs temperature data on the loaded readings.";
+}
+
+/** Readings fed to the chart + FG analyzer (compensated or raw). */
+function readingsForAnalysis() {
+  if (app.compensate && countReadingsWithTemp(app.readings) >= 1) {
+    return compensateReadings(app.readings);
+  }
+  return app.readings;
 }
 
 async function refreshFromBf() {
@@ -329,24 +453,62 @@ async function refreshFromBf() {
       });
     }
 
-    // 2. Decide the "from" date.  For an active session (updated_at
-    //    within the last few days) anchor on today; for an archived
-    //    session anchor on updated_at so we get the final tail.
-    const anchor = pickAnchorIso(current);
-    const from   = isoDateMinusDays(anchor, app.fgSettings.window_days);
-    const to     = isoDateMinusDays(anchor, -1); // anchor + 1 day inclusive
+    // 2. Fetch up to FETCH_SPAN_DAYS of readings.
+    //
+    // Active sessions: device_updated_at is trustworthy -- anchor a
+    // backward window of FETCH_SPAN_DAYS on it.
+    //
+    // Archived sessions: device_updated_at / last_reading often point
+    // at the START of the ferment (or some other stale blob), so a
+    // "last 28 days before that" window lands in empty pre-ferment
+    // time and returns 0-1 readings.  Instead page forward from the
+    // session's created_at, then keep only the last FETCH_SPAN_DAYS
+    // relative to the true newest reading we found.
+    let readings;
+    if (isArchivedSession(current)) {
+      const startIso = (current && current.og_ts)
+        || (app.currentSession && app.currentSession.created_at)
+        || "";
+      const fromDate = (typeof startIso === "string" && startIso.length >= 10)
+        ? startIso.slice(0, 10)
+        : null;
+      setMsg("#refresh-msg",
+        fromDate
+          ? `Archived session -- loading from ${fromDate}...`
+          : "Archived session -- loading full history...",
+        "");
+      readings = await fetchReadingsWindow(app.currentSessionId, {
+        fromDate,
+        toDate: null,
+        onProgress: ({ page, total }) => {
+          setMsg("#refresh-msg",
+            `Fetching page ${page} (${total} readings so far)...`, "");
+        },
+      });
+      const before = readings.length;
+      readings = trimToLastDays(readings, FETCH_SPAN_DAYS);
+      if (before > readings.length) {
+        setMsg("#refresh-msg",
+          `Trimmed ${before} \u2192 ${readings.length} (last ${FETCH_SPAN_DAYS}d)...`, "");
+      }
+    } else {
+      const anchor = pickAnchorIso(current);
+      const from   = isoDateMinusDays(anchor, FETCH_SPAN_DAYS);
+      const to     = isoDateMinusDays(anchor, -1);
+      setMsg("#refresh-msg",
+        `Fetching readings ${from} \u2192 ${to} (up to ${FETCH_SPAN_DAYS}d)...`, "");
+      readings = await fetchReadingsWindow(app.currentSessionId, {
+        fromDate: from,
+        toDate:   to,
+        onProgress: ({ page, total }) => {
+          setMsg("#refresh-msg",
+            `Fetching page ${page} (${total} readings so far)...`, "");
+        },
+      });
+    }
 
-    setMsg("#refresh-msg", `Fetching readings ${from} \u2192 ${to}...`, "");
-
-    // 3. Fetch readings, page by page.
-    const readings = await fetchReadingsWindow(app.currentSessionId, {
-      fromDate: from,
-      toDate:   to,
-      onProgress: ({ page, total }) => {
-        setMsg("#refresh-msg", `Fetching page ${page} (${total} readings so far)...`, "");
-      },
-    });
     app.readings = readings;
+    app.analysisEndSec = null;
     await putReadings(app.currentSessionId, readings);
 
     setMsg("#refresh-msg", `Loaded ${readings.length} reading${readings.length === 1 ? "" : "s"}.`, "ok");
@@ -358,25 +520,37 @@ async function refreshFromBf() {
   }
 }
 
+// True when the session's "last reading" timestamp is missing or older
+// than 24 h.  Matches the archived-session cutoff used by the stale
+// banner -- a live Pill/iSpindel uploads far more often than daily.
+function isArchivedSession(current) {
+  if (!current || !current.ts) return true;
+  const sec = FG.parseIsoToSec(current.ts);
+  if (sec === null) return true;
+  const ageH = (Date.now() / 1000 - sec) / 3600;
+  return ageH >= 24;
+}
+
+// Keep only readings within `days` of the newest sample.  Readings
+// must already be chronological (fetchReadingsWindow sorts them).
+function trimToLastDays(readings, days) {
+  if (!Array.isArray(readings) || !readings.length) return [];
+  const lastSec = FG.parseIsoToSec(readings[readings.length - 1].t);
+  if (lastSec === null) return readings;
+  const cutoff = lastSec - days * 86400;
+  return readings.filter(r => {
+    const t = FG.parseIsoToSec(r.t);
+    return t !== null && t >= cutoff;
+  });
+}
+
 function pickAnchorIso(current) {
-  // Anchor the fetch window on the timestamp of the newest reading BF
-  // has -- `device_updated_at`, which fetchCurrent returns as `ts`.
-  // This is right for both:
-  //   * Active ferments -- ts is very recent, window catches all
-  //     recent readings.
-  //   * Archived ferments -- ts is the end-of-ferment timestamp,
-  //     window catches the tail of the finished session so the
-  //     analyzer has data to work with instead of getting an empty
-  //     "today - N days" window that produces "Not Enough Readings".
-  // Falls back to session.updated_at (edit timestamp) and then today
-  // when we have neither -- both are very rare paths.
+  // Active-session path only.  Prefer device_updated_at (fetchCurrent
+  // returns it as `ts`); fall back to updated_at / og_ts / today.
   const today = todayIsoDate() + "T12:00:00Z";
   if (!current) return today;
   const ts = current.ts || current.updated_at || current.og_ts || "";
   if (!ts || ts.length < 10) return today;
-  // Sanity-check that we can parse it -- if BF returned something
-  // malformed, fall back to today rather than passing garbage to
-  // isoDateMinusDays.
   return FG.parseIsoToSec(ts) !== null ? ts : today;
 }
 
@@ -388,32 +562,60 @@ function renderDashboard() {
   if (!app.currentSessionId || !app.readings.length) {
     loaded.classList.add("hidden");
     empty.classList.remove("hidden");
+    syncCompensateControl();
     return;
   }
   loaded.classList.remove("hidden");
   empty.classList.add("hidden");
 
-  renderStrip();
+  syncCompensateControl();
+
+  // Same array for strip / FG / chart so Compensate never disagrees
+  // with itself across the dashboard.
+  const readings = readingsForAnalysis();
+
+  renderStrip(readings);
   renderStaleBanner();
 
-  const result = FG.analyze(app.readings, app.fgSettings);
+  const result = FG.analyze(readings, app.fgSettings, {
+    anchorSec: app.analysisEndSec,
+  });
   const cls    = FG.classify(result);
   renderFgCard(cls);
   renderTrendGraph({
     svg:      $("#trend-svg"),
     emptyEl:  $("#trend-empty"),
     subEl:    $("#trend-sub"),
-    readings: app.readings,
+    readings,
     result,
     cfg:      app.fgSettings,
     cls,
+    mode:     app.chartMode,
+    showTemp: app.tempVisible,
+    tempUnit: app.tempUnit,
+    compensated: !!(app.compensate && countReadingsWithTemp(app.readings) >= 1),
+    analysisEndSec: app.analysisEndSec,
+    onAnalysisEndChange: (endSec) => {
+      app.analysisEndSec = endSec;
+      renderDashboard();
+    },
+    onWindowDaysChange: (days) => {
+      const d = Math.max(1, Math.min(6, Math.round(Number(days) || 1)));
+      if (d === app.fgSettings.window_days) return;
+      app.fgSettings.window_days = d;
+      populateFgSettingsForm();
+      putFgSettings(app.fgSettings).catch(err =>
+        console.warn("[FG] save window_days failed:", err && err.message));
+      renderDashboard();
+    },
   });
   $("#fg-diag").textContent = FG.renderDiagnostics(result);
 }
 
-function renderStrip() {
-  const first = app.readings[0];
-  const last  = app.readings[app.readings.length - 1];
+function renderStrip(readings) {
+  const src = Array.isArray(readings) && readings.length ? readings : app.readings;
+  const first = src[0];
+  const last  = src[src.length - 1];
   const bf    = app.currentBf || {};
 
   const og = bf.og || (app.currentSession && app.currentSession.og);
@@ -423,7 +625,7 @@ function renderStrip() {
   $("#strip-temp").textContent =
     (last && typeof last.tf === "number") ? `${last.tf.toFixed(1)}\u00b0F` : "-.-\u00b0F";
 
-  $("#strip-count").textContent = String(app.readings.length);
+  $("#strip-count").textContent = String(src.length);
 
   const lastAge = last && FG.parseIsoToSec(last.t);
   if (lastAge) {

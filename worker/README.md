@@ -20,11 +20,13 @@ Copy that URL into `../bf-client.js` (the `WORKER_URL` constant near the top).
 
 ## Locking to your Pages origin
 
-The default `ALLOWED_ORIGIN` in `index.js` is
-`https://keglevelmonitor.github.io`. If you fork this repo and deploy
-under your own GitHub user, change that constant to match your Pages
-domain and redeploy. Requests from other origins will hit CORS block
-in the browser and never reach your Worker's fetch budget.
+Production traffic is allowed from `https://keglevelmonitor.github.io`
+(and your fork's Pages URL if you change `PRODUCTION_ORIGIN` in
+`index.js`).
+
+Local preview is also allowed so `npx serve` / `localhost` / LAN
+`192.168.*` / `10.*` HTTP origins can hit the Worker during development.
+Random public websites are still blocked by CORS.
 
 ## What it does NOT do
 
