@@ -100,8 +100,18 @@ export function renderTrendGraph({ svg, emptyEl, subEl, readings, result, cfg, c
   sgMax += pad;
   const sgSpan = sgMax - sgMin;
 
-  const VW = 400, VH = 200;
-  const L = 40, R = 12, T = 12, B = 22;
+  // Pixel-accurate viewBox: match the SVG's real rendered size so
+  // "1 SVG unit == 1 CSS pixel".  A fixed viewBox stretched via
+  // preserveAspectRatio="none" scales text / dots / stroke widths
+  // horizontally along with the container width, which looks
+  // oversized next to the rest of the page.  Measuring clientWidth
+  // at render time keeps chart elements at their intended physical
+  // pixel sizes regardless of card width.
+  const VW = Math.max(320, svg.clientWidth  || 900);
+  const VH = Math.max(160, svg.clientHeight || 200);
+  svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
+
+  const L = 44, R = 14, T = 14, B = 24;
   const PW = VW - L - R;
   const PH = VH - T - B;
   const xOf = tSec => L + ((tSec - t0) / tSpan) * PW;
@@ -188,7 +198,7 @@ export function renderTrendGraph({ svg, emptyEl, subEl, readings, result, cfg, c
   for (const idx of outSet) {
     const p = winPts[idx];
     if (!p) continue;
-    parts.push(`<circle class="trend-outlier" cx="${xOf(p[0]).toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="3"/>`);
+    parts.push(`<circle class="trend-outlier" cx="${xOf(p[0]).toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="4"/>`);
   }
 
   svg.innerHTML = parts.join("");

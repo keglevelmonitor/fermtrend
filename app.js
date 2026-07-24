@@ -286,6 +286,17 @@ async function selectSession(s) {
 
 function wireDashboard() {
   $("#btn-refresh").addEventListener("click", refreshFromBf);
+
+  // Re-render the chart when the browser window changes size so the
+  // pixel-accurate viewBox stays matched to the SVG's real client
+  // size.  Debounced so a continuous drag doesn't thrash re-renders.
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (app.readings && app.readings.length) renderDashboard();
+    }, 150);
+  });
 }
 
 async function refreshFromBf() {

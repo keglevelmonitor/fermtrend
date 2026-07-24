@@ -1,6 +1,14 @@
 {
-    "current":  "0.1.2",
+    "current":  "0.1.3",
     "entries":  [
+                    {
+                        "version":  "0.1.3",
+                        "date":  "2026-07-24",
+                        "notes":  [
+                                      "Fix chart text/dot/stroke scale after full-width layout -- viewBox now matches rendered pixel size so elements stay page-scale",
+                                      "Re-render chart on window resize so the viewBox stays accurate"
+                                  ]
+                    },
                     {
                         "version":  "0.1.2",
                         "date":  "2026-07-24",

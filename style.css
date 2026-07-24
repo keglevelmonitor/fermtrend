@@ -314,17 +314,17 @@ a:hover { color: #82d4ff; }
 /* SVG internal classes */
 .trend-axis        { stroke: #2a2a2a; stroke-width: 1; }
 .trend-tick        { stroke: #333;    stroke-width: 1; }
-.trend-tick-label  { fill:   #6a6a6a; font-size: 9px; }
+.trend-tick-label  { fill:   #8a8a8a; font-size: 11px; }
 .trend-line {
   fill: none;
   stroke: #4ade80;
-  stroke-width: 1.5;
+  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .trend-slope {
   stroke: #ffa500;
-  stroke-width: 1.5;
+  stroke-width: 1.75;
   stroke-dasharray: 6 4;
   opacity: 0.85;
 }
@@ -350,8 +350,8 @@ a:hover { color: #82d4ff; }
   stroke-dasharray: 3 3;
 }
 .trend-band-label {
-  fill: #6a6a6a;
-  font-size: 9px;
+  fill: #8a8a8a;
+  font-size: 11px;
   font-style: italic;
 }
 
