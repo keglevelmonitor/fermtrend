@@ -14,7 +14,7 @@ or persist the key).
 
 ## Try it
 
-<https://keglevelmonitor.github.io/FermTrend/>
+<https://keglevelmonitor.github.io/fermtrend/>
 
 1. Get your BF API key from <https://web.brewersfriend.com/apikey>.
 2. Paste it into the SETTINGS tab. Click **Save**.
@@ -59,8 +59,8 @@ account (Pages), Node.js 18+ locally.
 ### 1. Fork or clone this repo
 
 ```
-git clone https://github.com/keglevelmonitor/FermTrend.git
-cd FermTrend
+git clone https://github.com/keglevelmonitor/fermtrend.git
+cd fermtrend
 ```
 
 ### 2. Deploy the Cloudflare Worker (CORS proxy)

@@ -94,7 +94,7 @@ export default {
     const xkey = request.headers.get("X-API-Key");
     if (xkey) fwdHeaders.set("X-API-Key", xkey);
     fwdHeaders.set("Accept", request.headers.get("Accept") || "application/json");
-    fwdHeaders.set("User-Agent", "FermTrend/1.0 (+https://github.com/keglevelmonitor/FermTrend)");
+    fwdHeaders.set("User-Agent", "FermTrend/1.0 (+https://github.com/keglevelmonitor/fermtrend)");
 
     let upstream;
     try {
